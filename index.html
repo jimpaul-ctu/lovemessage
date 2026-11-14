@@ -120,6 +120,14 @@ a:focus-visible,button:focus-visible{outline:3px solid #ad956e;outline-offset:4p
 .letter-theme-night .letter-date,.letter-theme-night .letter-sign-label{color:#c9bccd}
 .letter-theme-night:before{border-color:#5c5266}
 .letter-theme-night{box-shadow:0 18px 45px #241f2b55}
+
+/* Date invitation */
+.date-buttons{display:flex;gap:14px;justify-content:center;margin-top:14px;flex-wrap:wrap}
+.detail-list{display:grid;gap:0;margin:22px 0}
+.detail{display:flex;justify-content:space-between;gap:24px;border-bottom:1px solid var(--line);padding:12px 0;margin:0}
+.detail:last-child{border:0}
+.detail strong{font-weight:600;color:var(--ink);white-space:nowrap}
+.detail span{color:#7d6d5c;text-align:right}
 </style>
 </head>
 <body>
@@ -345,6 +353,76 @@ a:focus-visible,button:focus-visible{outline:3px solid #ad956e;outline-offset:4p
   </div>
 </section>
 
+<section class="page">
+  <div class="heading">
+    <span class="eyebrow">07 / One more question</span>
+    <h2>Will you go<br>on a date with me?</h2>
+    <p>No pressure and no wrong answer. Whatever you choose, I will understand.</p>
+  </div>
+
+  <div class="card">
+    <div id="dateAsk">
+      <p style="text-align:center">Just one tap. Tell me honestly.</p>
+      <div class="date-buttons">
+        <button class="btn" id="dateYes" type="button">Yes</button>
+        <button class="btn ghost" id="dateNo" type="button">No</button>
+      </div>
+    </div>
+
+    <div id="dateDetails" hidden>
+      <h3>It's a date.</h3>
+      <p>Here is everything you need to know. I cannot wait.</p>
+      <div class="detail-list">
+        <p class="detail"><strong>Location</strong><span id="detailLocation"></span></p>
+        <p class="detail"><strong>Date</strong><span id="detailDate"></span></p>
+        <p class="detail"><strong>Day</strong><span id="detailDay"></span></p>
+        <p class="detail"><strong>Time</strong><span id="detailTime"></span></p>
+        <p class="detail"><strong>What to wear</strong><span id="detailWear"></span></p>
+      </div>
+      <div class="actions">
+        <button class="btn" id="sendDateAnswer" type="button">Send my answer to Gmail</button>
+      </div>
+      <p class="status" id="dateStatus" aria-live="polite"></p>
+    </div>
+
+    <div id="dateNoMsg" hidden>
+      <h3>That's okay.</h3>
+      <p>Take all the time you need. Nothing changes in how I feel about you, and this folder is not going anywhere. If you ever change your mind, the button will still be here.</p>
+      <div class="actions">
+        <button class="btn ghost" id="dateChange" type="button">Change my answer</button>
+        <button class="btn" id="sendDateAnswerNo" type="button">Send my answer to Gmail</button>
+      </div>
+      <p class="status" id="dateStatusNo" aria-live="polite"></p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:22px">
+    <h3>Plan the date</h3>
+    <p class="tiny">Fill in the details below. They appear instantly in the date invitation above, save on this device, and can be shared inside the link with the button below.</p>
+    <div class="letter-controls">
+      <label class="label" for="editLocation">Location</label>
+      <input id="editLocation" type="text" maxlength="200" placeholder="e.g. A quiet café in the city">
+
+      <label class="label" for="editDate">Date</label>
+      <input id="editDate" type="text" maxlength="120" placeholder="e.g. Saturday, November 21, 2026">
+
+      <label class="label" for="editDay">Day</label>
+      <input id="editDay" type="text" maxlength="60" placeholder="e.g. Saturday">
+
+      <label class="label" for="editTime">Time</label>
+      <input id="editTime" type="text" maxlength="60" placeholder="e.g. 5:00 PM">
+
+      <label class="label" for="editWear">What to wear</label>
+      <input id="editWear" type="text" maxlength="300" placeholder="e.g. Something comfortable">
+    </div>
+    <div class="actions">
+      <button class="btn" id="saveDetails" type="button">Save details</button>
+      <button class="btn ghost" id="shareDetailsLink" type="button">Copy link with my details</button>
+    </div>
+    <p class="status" id="detailsStatus" aria-live="polite"></p>
+  </div>
+</section>
+
 </main>
 
 <nav id="nav" class="nav" hidden aria-label="Page navigation">
@@ -371,7 +449,7 @@ function go(n){
   pages.forEach((p,i)=>p.classList.toggle('active',i===current));
   $('prev').disabled=!current;
   $('next').disabled=current===pages.length-1;
-  $('pageLabel').textContent=String(current+1).padStart(2,'0')+' / 07';
+  $('pageLabel').textContent=String(current+1).padStart(2,'0')+' / 08';
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
@@ -830,6 +908,55 @@ $('reviewAnswers').onclick=()=>{
   showQuestion();
 };
 
+/* Designed email helpers */
+function escapeHtml(text){
+  return String(text).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function emailShell(title,inner){
+  return '<div style="background:#f3efe8;padding:28px;font-family:Georgia,serif">'
+    +'<div style="max-width:620px;margin:0 auto;background:#fffcf6;border:1px solid #e2d7c7;border-radius:18px;padding:34px">'
+    +'<p style="text-align:center;color:#887457;font-size:11px;letter-spacing:4px;text-transform:uppercase;margin:0 0 24px;font-family:Arial,sans-serif">'+escapeHtml(title)+'</p>'
+    +inner
+    +'<p style="text-align:center;color:#b9a585;font-size:11px;margin:28px 0 0;font-family:Arial,sans-serif">Sent from “A Folder for You”</p>'
+    +'</div></div>';
+}
+
+function copyDesignedEmail(html,plain){
+  try{
+    if(navigator.clipboard && window.ClipboardItem){
+      navigator.clipboard.write([new ClipboardItem({
+        'text/html':new Promise(resolve=>resolve(new Blob([html],{type:'text/html'}))),
+        'text/plain':new Promise(resolve=>resolve(new Blob([plain],{type:'text/plain'})))
+      })]).catch(()=>{});
+      return true;
+    }
+  }catch(e){}
+  return false;
+}
+
+const PASTE_HINT='Gmail opened in a new tab. The designed version is copied — tap the message box there and paste (Ctrl+V, or long-press then Paste) to keep the full design, then press send.';
+
+function dateBlockHtml(){
+  if(!dateAnswer) return '';
+
+  const yes=dateAnswer==='Yes';
+  let inner;
+
+  if(yes){
+    inner='<div style="margin-top:10px;background:#fffcf6;border-radius:10px;padding:14px;font-family:Arial,sans-serif;font-size:14px;color:#5d4f42;line-height:1.9">'
+      +'Location: '+escapeHtml(DATE_DETAILS.location)+'<br>Date: '+escapeHtml(DATE_DETAILS.date)+'<br>Day: '+escapeHtml(DATE_DETAILS.day)+'<br>Time: '+escapeHtml(DATE_DETAILS.time)+'<br>What to wear: '+escapeHtml(DATE_DETAILS.wear)
+      +'</div>';
+  }else{
+    inner='<p style="margin:10px 0 0;font-size:16px;color:#5d4f42;line-height:1.7">No, not this time — but this folder still means a lot to me.</p>';
+  }
+
+  return '<div style="margin-top:26px;background:#e5d5bb;border-radius:12px;padding:20px">'
+    +'<p style="margin:0;font-family:Arial,sans-serif;font-size:15px;font-weight:bold;color:#494137">Will you go on a date with me? — '+dateAnswer+'</p>'
+    +inner
+    +'</div>';
+}
+
 /* Send answers to Gmail */
 $('sendAnswersGmail').onclick=()=>{
   const answeredCount=responses.filter(r=>r&&r.answer).length;
@@ -843,11 +970,22 @@ $('sendAnswersGmail').onclick=()=>{
     return (i+1)+'. '+q+'\n'+(responses[i].answer||'');
   }).join('\n\n');
 
+  const answerBlocks=questions.map((q,i)=>{
+    return '<div style="margin:0 0 16px;background:#f7f1e7;border-radius:12px;padding:18px">'
+      +'<p style="margin:0 0 8px;font-family:Arial,sans-serif;font-size:14px;font-weight:bold;color:#494137">'+(i+1)+'. '+escapeHtml(q)+'</p>'
+      +'<p style="margin:0;font-size:16px;line-height:1.7;color:#5d4f42;white-space:pre-wrap">'+escapeHtml(responses[i].answer||'')+'</p>'
+      +'</div>';
+  }).join('');
+
   const subject='My answers to your questions';
-  const url='https://mail.google.com/mail/?view=cm&fs=1&to=orchestratorweb@gmail.com&su='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+  const dateLine=dateAnswer?'\n\nWill you go on a date with me? '+dateAnswer:'';
+  const url='https://mail.google.com/mail/?view=cm&fs=1&to=orchestratorweb@gmail.com&su='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body+dateLine);
+
+  const html=emailShell('My answers to your questions',answerBlocks+dateBlockHtml());
+  const copied=copyDesignedEmail(html,body+dateLine);
 
   window.open(url,'_blank');
-  $('gmailStatus').textContent='Gmail opened in a new tab, already addressed to me. Just press send.';
+  $('gmailStatus').textContent=copied?PASTE_HINT:'Gmail opened in a new tab, already addressed to me. Just press send.';
 };
 
 showQuestion();
@@ -943,9 +1081,172 @@ $('sendLetter').onclick=()=>{
 
   const url='https://mail.google.com/mail/?view=cm&fs=1&to=orchestratorweb@gmail.com&su='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
 
+  const letterHtml=emailShell('A love letter for you',
+    '<p style="color:#8a7e70;font-size:14px;margin:0 0 20px">'+escapeHtml(date)+'</p>'
+    +'<h2 style="color:#4a3d2e;font-size:26px;font-weight:normal;margin:0 0 20px">To you,</h2>'
+    +'<p style="white-space:pre-wrap;color:#5d4f42;font-size:17px;line-height:1.8;margin:0">'+escapeHtml(message)+'</p>'
+    +'<p style="text-align:right;color:#8a7e70;margin:28px 0 4px">With all my love,</p>'
+    +'<p style="text-align:right;color:#4a3d2e;font-size:19px;margin:0">'+escapeHtml(name)+'</p>');
+
+  const copied=copyDesignedEmail(letterHtml,body);
+
   window.open(url,'_blank');
-  $('sendLetterStatus').textContent='Gmail opened in a new tab, already addressed to me. Just press send.';
+  $('sendLetterStatus').textContent=copied?PASTE_HINT:'Gmail opened in a new tab, already addressed to me. Just press send.';
 };
+
+/* Date invitation */
+const DATE_DETAILS={
+  location:'A quiet café we have not tried yet — I will send you the exact place',
+  date:'Saturday, November 21, 2026',
+  day:'Saturday',
+  time:'5:00 PM',
+  wear:'Something comfortable. I want you to feel at ease, not perfect.'
+};
+
+let dateAnswer='';
+
+function fillDateDetails(){
+  $('detailLocation').textContent=DATE_DETAILS.location;
+  $('detailDate').textContent=DATE_DETAILS.date;
+  $('detailDay').textContent=DATE_DETAILS.day;
+  $('detailTime').textContent=DATE_DETAILS.time;
+  $('detailWear').textContent=DATE_DETAILS.wear;
+}
+
+$('dateYes').onclick=()=>{
+  dateAnswer='Yes';
+  $('dateAsk').hidden=true;
+  $('dateNoMsg').hidden=true;
+  $('dateDetails').hidden=false;
+  fillDateDetails();
+};
+
+$('dateNo').onclick=()=>{
+  dateAnswer='No';
+  $('dateAsk').hidden=true;
+  $('dateDetails').hidden=true;
+  $('dateNoMsg').hidden=false;
+};
+
+$('dateChange').onclick=()=>{
+  dateAnswer='';
+  $('dateAsk').hidden=false;
+  $('dateDetails').hidden=true;
+  $('dateNoMsg').hidden=true;
+};
+
+/* Editable date details */
+const DETAIL_FIELDS=[
+  ['editLocation','location'],
+  ['editDate','date'],
+  ['editDay','day'],
+  ['editTime','time'],
+  ['editWear','wear']
+];
+
+function loadDateDetails(){
+  let saved={};
+
+  try{
+    saved=JSON.parse(localStorage.getItem('date-details-v1'))||{};
+  }catch{}
+
+  const params=new URLSearchParams(location.search);
+
+  DETAIL_FIELDS.forEach(([inputId,key])=>{
+    const fromUrl=params.get(key);
+    if(fromUrl!==null && fromUrl!=='') saved[key]=fromUrl;
+    if(saved[key]) DATE_DETAILS[key]=saved[key];
+    const field=$(inputId);
+    if(field && DATE_DETAILS[key]) field.value=DATE_DETAILS[key];
+  });
+}
+
+$('saveDetails').onclick=()=>{
+  DETAIL_FIELDS.forEach(([inputId,key])=>{
+    const value=$(inputId).value.trim();
+    if(value) DATE_DETAILS[key]=value;
+  });
+
+  try{
+    localStorage.setItem('date-details-v1',JSON.stringify(DATE_DETAILS));
+    $('detailsStatus').textContent='Saved. The date invitation now shows these details on this device.';
+  }catch{
+    $('detailsStatus').textContent='Details updated for this session, but saving in this browser failed.';
+  }
+
+  fillDateDetails();
+};
+
+$('shareDetailsLink').onclick=async()=>{
+  const params=new URLSearchParams();
+
+  DETAIL_FIELDS.forEach(([inputId,key])=>{
+    const value=$(inputId).value.trim()||DATE_DETAILS[key];
+    if(value) params.set(key,value);
+  });
+
+  const link=location.href.split(/[?#]/)[0]+'?'+params.toString();
+
+  let copied=false;
+
+  try{
+    await navigator.clipboard.writeText(link);
+    copied=true;
+  }catch(e){
+    const area=document.createElement('textarea');
+    area.value=link;
+    document.body.append(area);
+    area.select();
+    try{document.execCommand('copy');copied=true;}catch(e2){}
+    area.remove();
+  }
+
+  if(copied){
+    $('detailsStatus').textContent='Link copied. Share that link — the details travel inside it and the private code still applies.';
+  }else{
+    $('detailsStatus').textContent='Copy this link and share it: '+link;
+  }
+};
+
+loadDateDetails();
+
+function sendDateReply(){
+  const isYes=dateAnswer==='Yes';
+  const subject=isYes?'My answer: YES to our date':'My answer to your date question';
+  let body;
+  let htmlInner;
+
+  if(isYes){
+    body='My answer: Yes, I will go on a date with you.\n\nSee you there.\n\n— Your date details —\nLocation: '+DATE_DETAILS.location+'\nDate: '+DATE_DETAILS.date+'\nDay: '+DATE_DETAILS.day+'\nTime: '+DATE_DETAILS.time+'\nWhat to wear: '+DATE_DETAILS.wear;
+    htmlInner='<p style="font-size:18px;color:#5d4f42;line-height:1.8;margin:0 0 20px">My answer: <b style="color:#887457">Yes</b>, I will go on a date with you. See you there.</p>'
+      +'<div style="background:#f7f1e7;border-radius:12px;padding:18px;font-family:Arial,sans-serif;font-size:14px;line-height:2;color:#5d4f42">'
+      +'<b style="color:#494137">Location:</b> '+escapeHtml(DATE_DETAILS.location)+'<br>'
+      +'<b style="color:#494137">Date:</b> '+escapeHtml(DATE_DETAILS.date)+'<br>'
+      +'<b style="color:#494137">Day:</b> '+escapeHtml(DATE_DETAILS.day)+'<br>'
+      +'<b style="color:#494137">Time:</b> '+escapeHtml(DATE_DETAILS.time)+'<br>'
+      +'<b style="color:#494137">What to wear:</b> '+escapeHtml(DATE_DETAILS.wear)
+      +'</div>';
+  }else{
+    body='My answer: No, not this time.\n\nPlease understand. This folder still means a lot to me.';
+    htmlInner='<p style="font-size:18px;color:#5d4f42;line-height:1.8;margin:0">My answer: <b style="color:#887457">No</b>, not this time.</p>'
+      +'<p style="font-size:16px;color:#8a7e70;line-height:1.8;margin:14px 0 0">Please understand. This folder still means a lot to me.</p>';
+  }
+
+  const url='https://mail.google.com/mail/?view=cm&fs=1&to=orchestratorweb@gmail.com&su='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+
+  const html=emailShell(isYes?'YES to our date':'My answer to your date question',htmlInner);
+  const copied=copyDesignedEmail(html,body);
+
+  window.open(url,'_blank');
+
+  const hint=copied?PASTE_HINT:'Gmail opened in a new tab, already addressed to me. Just press send.';
+  if(isYes) $('dateStatus').textContent=hint;
+  else $('dateStatusNo').textContent=hint;
+}
+
+$('sendDateAnswer').onclick=sendDateReply;
+$('sendDateAnswerNo').onclick=sendDateReply;
 </script>
 
 </body>
